@@ -41,7 +41,7 @@ fn format_entry(entry: Entry) -> String {
         "".to_owned()
     };
     format!(
-        "### ***{}***\n{}\n{}{}",
+        "\n***{}***\n{}{}{}",
         entry.part_of_speech, senses, synonyms, antonyms,
     )
 }
@@ -72,21 +72,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .json::<JsonResponse>()
             .await?;
 
-        let contents = if !response.entries.is_empty() {
-            response
+        let content = if !response.entries.is_empty() {
+            let mut content = format!("## {}\n", word);
+            content += &response
                 .entries
                 .into_iter()
                 .map(format_entry)
                 .collect::<Vec<_>>()
-                .join("\n")
+                .join("\n");
+            content
         } else {
-            "Not found".to_owned()
+            format!("{} not found", word)
         };
 
         let path = format!("{}{}.md", obsidian_vault_path, word);
 
         let mut file = File::create(&path)?;
-        file.write_fmt(format_args!("{contents}"))?;
+        file.write_fmt(format_args!("{content}"))?;
 
         Command::new("open")
             .arg(format!("obsidian://{path}"))
